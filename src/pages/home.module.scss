@@ -1,1 +1,50 @@
 // TODO
+.container {
+  max-width: 1128px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  width: 720px;
+}
+
+.postContainer {
+  padding: 2rem;
+  margin-bottom: 2rem;
+  h1 {
+    color: var(--heading);
+    margin-bottom: 1rem;
+    font-size: 1.75rem;
+  }
+
+  p {
+    color: var(--body);
+    margin-bottom: 1rem;
+    font-size: 1.125rem;
+  }
+
+  > div {
+    color: var(--info);
+    display: flex;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+
+    time,
+    div {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-left: 1rem;
+    }
+  }
+}
+
+button {
+  &.nextPost {
+    background: transparent;
+    border: 0;
+    color: var(--pink);
+    font-weight: 600;
+    font-size: 1.125rem;
+    cursor: pointer;
+    padding: 0 2rem;
+  }
+}
