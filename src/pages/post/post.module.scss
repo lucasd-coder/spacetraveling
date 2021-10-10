@@ -1,6 +1,6 @@
 // TODO
 .postBanner {
-  width: 100vw;
+  width: 100%;
   height: 400px;
   -o-object-fit: cover;
      object-fit: cover;
@@ -42,4 +42,40 @@
       -ms-flex-align: center;
           align-items: center;
   gap: 0.5rem;
+}
+
+.navigation {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 3rem;
+
+  h3 {
+    font-weight: 400;
+    font-size: 1.125rem;
+    line-height: 1.375rem;
+    letter-spacing: -0.5px;
+    color: var(--heading);
+
+    margin-bottom: 0.5rem;
+  }
+
+  a {
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.1875rem;
+    letter-spacing: -0.5px;
+    color: var(--pink);
+
+    transition: filter 0.2s;
+
+    &:hover {
+      filter: brightness(0.8);
+    }
+  }
+
+  div + div {
+    text-align: right;
+  }
 }

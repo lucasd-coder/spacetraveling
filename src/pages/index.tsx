@@ -1,8 +1,7 @@
+/* eslint-disable react/no-unused-prop-types */
 import { GetStaticProps } from 'next';
 import { FiCalendar, FiUser } from 'react-icons/fi';
 import Prismic from '@prismicio/client';
-import { format } from 'date-fns';
-import ptBR from 'date-fns/locale/pt-BR';
 
 import Link from 'next/link';
 import { useState } from 'react';
@@ -11,6 +10,7 @@ import { getPrismicClient } from '../services/prismic';
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
 import Header from '../components/Header';
+import { formatDate } from '../utils';
 
 interface Post {
   uid?: string;
@@ -29,18 +29,32 @@ interface PostPagination {
 
 interface HomeProps {
   postsPagination: PostPagination;
+  preview: boolean;
 }
 
-export default function Home({ postsPagination }: HomeProps): JSX.Element {
-  const [loadedPosts, setLoadedPosts] = useState<Post[]>([]);
+export default function Home({
+  postsPagination,
+  preview,
+}: HomeProps): JSX.Element {
+  const [nextPage, setNextPage] = useState<string>(postsPagination.next_page);
+
+  const formattedPosts = postsPagination.results.map(post => {
+    return {
+      ...post,
+      first_publication_date: formatDate(post.first_publication_date),
+    };
+  });
+
+  const [loadedPosts, setLoadedPosts] = useState<Post[]>(formattedPosts);
 
   async function handleLoadData(): Promise<void> {
-    const response = await fetch(postsPagination.next_page);
+    const response = await fetch(nextPage);
     const data = await response.json();
+    setNextPage(data.next_page);
     const posts = data.results.map(item => {
       return {
         uid: item.uid,
-        first_publication_date: item.first_publication_date,
+        first_publication_date: formatDate(item.first_publication_date),
         data: {
           title: item.data.title,
           subtitle: item.data.subtitle,
@@ -49,32 +63,13 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
       };
     });
 
-    setLoadedPosts(posts);
+    setLoadedPosts([...loadedPosts, ...posts]);
   }
 
   return (
     <>
       <Header />
       <section className={commonStyles.container}>
-        {postsPagination.results.map((item: Post) => (
-          <div key={item.uid} className={styles.postContainer}>
-            <Link href={`/post/${item.uid}`}>
-              <a>
-                <h1>{item.data.title}</h1>
-              </a>
-            </Link>
-            <p>{item.data.subtitle}</p>
-            <div>
-              <FiCalendar color="#d7d7d7" />
-              {format(new Date(item.first_publication_date), 'd MMM yyyy', {
-                locale: ptBR,
-              })}
-              <div>
-                <FiUser color="#d7d7d7" /> {item.data.author}
-              </div>
-            </div>
-          </div>
-        ))}
         {loadedPosts.map((item: Post) => (
           <div key={item.uid} className={styles.postContainer}>
             <Link href={`/post/${item.uid}`}>
@@ -85,9 +80,7 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
             <p>{item.data.subtitle}</p>
             <div>
               <FiCalendar color="#d7d7d7" />
-              {format(new Date(item.first_publication_date), 'd MMM yyyy', {
-                locale: ptBR,
-              })}
+              {item.first_publication_date}
               <div>
                 <FiUser color="#d7d7d7" /> {item.data.author}
               </div>
@@ -95,7 +88,7 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
           </div>
         ))}
 
-        {postsPagination.next_page && (
+        {nextPage && (
           <button
             type="button"
             onClick={handleLoadData}
@@ -104,12 +97,23 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
             Carregar mais posts
           </button>
         )}
+
+        {preview && (
+          <aside>
+            <Link href="/api/exit-preview">
+              <a className={commonStyles.preview}>Sair do modo Preview</a>
+            </Link>
+          </aside>
+        )}
       </section>
     </>
   );
 }
 
-export const getStaticProps: GetStaticProps = async () => {
+export const getStaticProps: GetStaticProps = async ({
+  preview = false,
+  previewData,
+}) => {
   const prismic = getPrismicClient();
   const postsResponse = await prismic.query(
     [Prismic.predicates.at('document.type', 'posts')],
@@ -121,7 +125,8 @@ export const getStaticProps: GetStaticProps = async () => {
         'posts.subtitle',
         'posts.author',
       ],
-      pageSize: 100,
+      pageSize: 1,
+      ref: previewData?.ref ?? null,
     }
   );
 
@@ -137,13 +142,16 @@ export const getStaticProps: GetStaticProps = async () => {
     };
   });
 
+  const postsPagination = {
+    results: posts,
+    next_page: postsResponse.next_page,
+  };
+
   return {
     props: {
-      postsPagination: {
-        results: posts,
-        next_page: postsResponse.next_page,
-      },
-      revalidate: 60 * 30,
+      postsPagination,
+      preview,
     },
+    revalidate: 60 * 60,
   };
 };
